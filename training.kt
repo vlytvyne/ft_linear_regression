@@ -13,24 +13,24 @@ import kotlin.collections.ArrayList
 import kotlin.math.abs
 import kotlin.system.exitProcess
 
-const val DEFAULT_LEARNING_RATE = 0.1
-const val DEFAULT_ACCEPTABLE_LEARNING_STEP_DIFF = 0.01
+private const val DEFAULT_LEARNING_RATE = 0.1
+private const val DEFAULT_ACCEPTABLE_LEARNING_STEP_DIFF = 0.01
 
-data class Car(val mileage: Double, val price: Int)
+private data class Car(val mileage: Double, val price: Int)
 
-val inputCars = ArrayList<Car>()
-val reducedMileageCars = ArrayList<Car>()
-var averageMileage: Double = 0.0
+private val inputCars = ArrayList<Car>()
+private val reducedMileageCars = ArrayList<Car>()
+private var averageMileage: Double = 0.0
 
-var learningRate = DEFAULT_LEARNING_RATE
-var acceptableLearningStepDiff = DEFAULT_ACCEPTABLE_LEARNING_STEP_DIFF
+private var learningRate = DEFAULT_LEARNING_RATE
+private var acceptableLearningStepDiff = DEFAULT_ACCEPTABLE_LEARNING_STEP_DIFF
 
-var bias: Double = 0.0
-var slope: Double = 0.0
+private var bias: Double = 0.0
+private var slope: Double = 0.0
 
 //https://medium.com/@lachlanmiller_52885/machine-learning-week-1-cost-function-gradient-descent-and-univariate-linear-regression-8f5fe69815fd
 fun main(args: Array<String>) {
-	val clArgs = parseArgs(args)
+	val clArgs = parseArgs(args)!!
 	learningRate = clArgs.learningRage
 	acceptableLearningStepDiff = clArgs.acceptableLearningStepDiff
 	processInput(clArgs.inputFileName)
@@ -41,15 +41,18 @@ fun main(args: Array<String>) {
 	if (clArgs.showChart) { drawChart() }
 }
 
-fun parseArgs(args: Array<String>): CommandLineArguments {
-	return try {
-		ArgParser(args).parseInto(::CommandLineArguments)
+private fun parseArgs(args: Array<String>): TrainingCommandLineArguments? {
+	try {
+		ArgParser(args, helpFormatter = DefaultHelpFormatter(HELP_PROGRAM_DESC)).parseInto(::TrainingCommandLineArguments)
 	} catch (e: SystemExitException) {
 		e.printAndExit()
+	} catch (e: Exception) {
+		invalidExit("Wrong command line arguments")
 	}
+	return null
 }
 
-fun processInput(inputFileName: String?) {
+private fun processInput(inputFileName: String?) {
 	if (inputFileName == null) {
 		readInput(System.`in`)
 	} else {
@@ -61,7 +64,7 @@ fun processInput(inputFileName: String?) {
 	}
 }
 
-fun readInput(inputStream: InputStream) {
+private fun readInput(inputStream: InputStream) {
 	val scanner = Scanner(inputStream)
 	processCSVHeader(scanner)
 	try {
@@ -86,14 +89,14 @@ private fun processCSVHeader(scanner: Scanner) {
 	}
 }
 
-fun reduceMileage() {
+private fun reduceMileage() {
 	inputCars.forEach {
 		val reducedMileage = it.mileage / averageMileage
 		reducedMileageCars.add(Car(reducedMileage, it.price))
 	}
 }
 
-fun calculateWeights(printProgress: Boolean) {
+private fun calculateWeights(printProgress: Boolean) {
 	var iteration = 0
 	while(true) {
 		if (printProgress) {
@@ -113,36 +116,36 @@ fun calculateWeights(printProgress: Boolean) {
 
 private fun printIterationResult(iteration: Int) {
 	println("ITERATION: $iteration")
-	println("Theta0 (bias): " + String.format("%.6f", bias))
-	println("Theta1 (slope): " + String.format("%.6f", slope / averageMileage))
+	println("theta0 (bias): " + String.format("%.6f", bias))
+	println("theta1 (slope): " + String.format("%.6f", slope / averageMileage))
 	println()
 }
 
 private fun isConvergenceAchieved(newSlope: Double, newBias: Double) =
 	abs(newSlope - slope) <= acceptableLearningStepDiff && abs(newBias - bias) <= acceptableLearningStepDiff
 
-fun getSlopeAfterStep(): Double =
+private fun getSlopeAfterStep(): Double =
 	slope - (reducedMileageCars.sumByDouble { (estimatePrice(it.mileage) - it.price) * it.mileage } / reducedMileageCars.size) * learningRate
 
-fun getBiasAfterStep(): Double =
+private fun getBiasAfterStep(): Double =
 	bias - (reducedMileageCars.sumByDouble { estimatePrice(it.mileage) - it.price } / reducedMileageCars.size) * learningRate
 
-fun estimatePrice(mileage: Double) =
+private fun estimatePrice(mileage: Double) =
 	mileage * slope + bias
 
-fun printResult() {
-	println("Theta0=$bias")
-	println("Theta1=$slope")
+private fun printResult() {
+	println("theta0=$bias")
+	println("theta1=$slope")
 }
 
-fun drawChart() {
+private fun drawChart() {
 	val chart = createChart()
 	addCarMarkersOnChart(chart)
 	addLinearRegLineOnChart(chart)
 	SwingWrapper(chart).displayChart()
 }
 
-fun createChart(): XYChart {
+private fun createChart(): XYChart {
 	val chart = XYChartBuilder()
 		.width(600)
 		.height(500)
@@ -162,14 +165,14 @@ fun createChart(): XYChart {
 	return chart
 }
 
-fun addCarMarkersOnChart(chart: XYChart) {
+private fun addCarMarkersOnChart(chart: XYChart) {
 	val carsX = inputCars.map { it.mileage }
 	val carsY = inputCars.map { it.price }
 
 	chart.addSeries("Car", carsX, carsY)
 }
 
-fun addLinearRegLineOnChart(chart: XYChart) {
+private fun addLinearRegLineOnChart(chart: XYChart) {
 	val xLinearRegStart = inputCars.minBy { it.mileage }!!.mileage
 	val xLinearRegEnd = inputCars.maxBy { it.mileage }!!.mileage
 	val yLinearRegStart = estimatePrice(xLinearRegStart)
@@ -182,12 +185,14 @@ fun addLinearRegLineOnChart(chart: XYChart) {
 	series.xySeriesRenderStyle = XYSeries.XYSeriesRenderStyle.Line
 }
 
-fun invalidExit(errorMsg: String) {
+private fun invalidExit(errorMsg: String) {
 	println(errorMsg)
 	exitProcess(1)
 }
 
-class CommandLineArguments(parser: ArgParser) {
+private const val HELP_PROGRAM_DESC = "This program is used to learn from the given cars data set to find weights which will be used in making predictions"
+
+private class TrainingCommandLineArguments(parser: ArgParser) {
 
 	val verbose by parser.flagging(
 		"-v", "--verbose",
