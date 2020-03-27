@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
 
 private fun parseArgs(args: Array<String>): TrainingCommandLineArguments? {
 	try {
-		ArgParser(args, helpFormatter = DefaultHelpFormatter(HELP_PROGRAM_DESC)).parseInto(::TrainingCommandLineArguments)
+		return ArgParser(args, helpFormatter = DefaultHelpFormatter(HELP_PROGRAM_DESC)).parseInto(::TrainingCommandLineArguments)
 	} catch (e: SystemExitException) {
 		e.printAndExit()
 	} catch (e: Exception) {
@@ -134,8 +134,8 @@ private fun estimatePrice(mileage: Double) =
 	mileage * slope + bias
 
 private fun printResult() {
-	println("theta0=$bias")
-	println("theta1=$slope")
+	println("theta0: $bias")
+	println("theta1: $slope")
 }
 
 private fun drawChart() {
